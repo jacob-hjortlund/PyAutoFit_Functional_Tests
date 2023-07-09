@@ -4,7 +4,7 @@ import autofit as af
 import autofit.plot as aplt
 import matplotlib.pyplot as plt
 
-import cosmo as cosmo
+import src as cosmo
 
 from autoconf import conf
 from pyprojroot import here
@@ -14,6 +14,8 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+n_cpus_available = os.environ.get("")
 
 def power_two(n):
     return int(np.log2(n))
@@ -40,7 +42,7 @@ def main():
     )
 
     save_path = os.path.join(
-        root_path, "tests", "parallel", "results",
+        root_path, "results", "emcee",
         f"n_cpus_{n_cpus_available}_repeats_{n_repeats}"
     )
     os.makedirs(save_path, exist_ok=True)
@@ -125,6 +127,9 @@ def main():
             n_cpus_to_use = n_cpus_arr[j]
             search = af.Emcee(
                 number_of_cores=n_cpus_to_use,
+                number_of_walkers=50,
+                number_of_steps=2500,
+                iterations_per_update=int(1e6), # set to large number to avoid updates
             )
             result = search.fit(model=model, analysis=analysis)
             time = result.samples.time
