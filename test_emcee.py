@@ -15,7 +15,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-n_cpus_available = os.environ.get("")
+n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
 
 def power_two(n):
     return int(np.log2(n))
@@ -25,7 +25,6 @@ def main():
     # CPU Settings TODO: Make this a CLI arg or config based
 
     n_repeats = 1
-    n_cpus_available = 4
     n_cpus_arr = np.array(
         [
             2**i for i in range(power_two(n_cpus_available) + 1)
@@ -42,18 +41,20 @@ def main():
     )
 
     save_path = os.path.join(
-        root_path, "results", "emcee",
-        f"n_cpus_{n_cpus_available}_repeats_{n_repeats}"
+        root_path, "results",
+        f"n_cpus_{n_cpus_available}_repeats_{n_repeats}",
+        "emcee"
     )
     os.makedirs(save_path, exist_ok=True)
 
     output_filename = os.path.join(
-        save_path, "emcee_mp_walltimes.npy"
+        save_path, "mp_walltimes.npy"
     )
     if os.path.exists(output_filename):
         output = np.load(file=output_filename)
     else:
         output = np.zeros((n_repeats, n_cpus))
+        np.save(file=output_filename, arr=output)
 
     config_path = os.path.join(
         root_path, "config"
@@ -115,8 +116,6 @@ def main():
 
     # Run Search Over N cpus
 
-    wall_times = np.zeros((n_repeats, n_cpus))
-
     for i in range(n_repeats):
 
         print(f"\nRepeat {i+1} of {n_repeats}\n")
@@ -136,7 +135,7 @@ def main():
             output[i, j] = float(time)
             print("\n")
         
-    np.save(file=output_filename, arr=output)
+        np.save(file=output_filename, arr=output)
 
 if __name__ == "__main__":
     main()
