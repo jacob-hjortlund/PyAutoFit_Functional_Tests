@@ -4,9 +4,10 @@ import autofit as af
 import autofit.plot as aplt
 import matplotlib.pyplot as plt
 
+import src.cosmo as cosmo
+
 from autoconf import conf
 from pyprojroot import here
-from .. import src as cosmo
 
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
