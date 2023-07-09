@@ -4,7 +4,7 @@ import autofit as af
 import autofit.plot as aplt
 import matplotlib.pyplot as plt
 
-import src.cosmo as cosmo
+import cosmo as cosmo
 
 from autoconf import conf
 from pyprojroot import here
