@@ -1,11 +1,12 @@
+import os
+import numpy as np
 import autofit as af
 import autofit.plot as aplt
-import numpy as np
 import matplotlib.pyplot as plt
 
-import os
-from os import path
 from autoconf import conf
+from pyprojroot import here
+from .. import src as cosmo
 
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -16,48 +17,120 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 def power_two(n):
     return int(np.log2(n))
 
-n_skip = 0
-n_repeats = 1
-n_available_cpus = 4
-n_cpus_arr = np.array(
-    [
-        2**i for i in range(power_two(n_available_cpus) + 1)
-    ]
-)[n_skip:]
-n_cpus = len(n_cpus_arr)
+def main():
 
-pwd = path.abspath(path.dirname(__file__))
-dataset_path = path.join(pwd, "dataset", "example_1d", "gaussian_x2")
-data = af.util.numpy_array_from_json(file_path=path.join(dataset_path, "data.json"))
-noise_map = af.util.numpy_array_from_json(
-    file_path=path.join(dataset_path, "noise_map.json")
-)
+    # CPU Settings TODO: Make this a CLI arg or config based
 
-xvalues = np.arange(data.shape[0])
+    n_repeats = 1
+    n_cpus_available = 4
+    n_cpus_arr = np.array(
+        [
+            2**i for i in range(power_two(n_cpus_available) + 1)
+        ]
+    )
+    n_cpus = len(n_cpus_arr)
 
-model = af.Collection(gaussian_0=af.ex.Gaussian)
-print(model.info)
-analysis = af.ex.Analysis(data=data, noise_map=noise_map)
+    # Set Paths
 
-times = np.zeros((n_repeats, n_cpus))
+    root_path = str(here())
 
-for i in range(n_repeats):
-    for j in range(n_cpus):
-        n_cpus_to_use = n_cpus_arr[j]
-        search = af.Emcee(
-            number_of_cores=n_cpus_to_use,
-            nwalkers=512,
-            nsteps=1000,
-            iterations_per_update=3000,
-        )
+    dataset_path = os.path.join(
+        root_path, "dataset", "cosmology"
+    )
 
-        result = search.fit(model=model, analysis=analysis)
-        time = result.samples.time
-        times[i, j] = float(time)
+    save_path = os.path.join(
+        root_path, "tests", "parallel", "results",
+        f"n_cpus_{n_cpus_available}_repeats_{n_repeats}"
+    )
+    os.makedirs(save_path, exist_ok=True)
 
-initial_time = times[:, 0]
-#speed_ups = initial_time[:, None] / times
+    output_filename = os.path.join(
+        save_path, "emcee_mp_walltimes.npy"
+    )
+    if os.path.exists(output_filename):
+        output = np.load(file=output_filename)
+    else:
+        output = np.zeros((n_repeats, n_cpus))
 
-file_name = "sneakier_pool_mp"
-np.save(file=path.join(pwd, file_name + "_times.npy"), arr=times)
-np.save(file=path.join(pwd, file_name + "_n_cpus.npy"), arr=n_cpus_arr)
+    config_path = os.path.join(
+        root_path, "config"
+    )
+    conf.instance.push(new_path=config_path)
+
+    # Load Datasets
+
+    data = np.load(file=os.path.join(dataset_path, "data.npy"))
+    noise_map = np.load(file=os.path.join(dataset_path, "noise_map.npy"))
+    psf = np.load(file=os.path.join(dataset_path, "psf.npy"))
+    grid = np.load(file=os.path.join(dataset_path, "grid.npy"))
+
+    # Build Lens Model
+
+    light = af.Model(cosmo.lp.LightDeVaucouleurs)
+
+    light.centre = (0.0, 0.0)
+    light.axis_ratio = af.UniformPrior(lower_limit=0.6, upper_limit=1.0)
+    light.angle = af.UniformPrior(lower_limit=0.0, upper_limit=180.0)
+    light.intensity = af.LogUniformPrior(lower_limit=1e-4, upper_limit=1e4)
+    light.effective_radius = af.UniformPrior(lower_limit=0.0, upper_limit=5.0)
+
+    mass = af.Model(cosmo.mp.MassIsothermal)
+
+    mass.centre = (0.0, 0.0)
+    mass.axis_ratio = af.UniformPrior(lower_limit=0.6, upper_limit=1.0)
+    mass.angle = af.UniformPrior(lower_limit=0.0, upper_limit=180.0)
+    mass.mass = af.UniformPrior(lower_limit=1.0, upper_limit=2.0) # This is a prior I know from previous analysis
+
+    lens = af.Model(
+        cosmo.Galaxy, redshift=0.5, light_profile_list=[light], mass_profile_list=[mass]
+    )
+
+    # Build Source Model
+
+    light = af.Model(cosmo.lp.LightExponential)
+
+    light.centre.centre_0 = af.GaussianPrior(mean=-0.25, sigma=0.1) # This is a prior I know from previous analysis
+    light.centre.centre_1 = af.GaussianPrior(mean=0.33, sigma=0.1) # This is a prior I know from previous analysis
+    light.axis_ratio = af.UniformPrior(lower_limit=0.7, upper_limit=1.0)
+    light.angle = af.UniformPrior(lower_limit=0.0, upper_limit=180.0)
+    light.intensity = af.LogUniformPrior(lower_limit=1e-4, upper_limit=1e4)
+    light.effective_radius = af.UniformPrior(lower_limit=0.0, upper_limit=1.0)
+
+    source = af.Model(
+        cosmo.Galaxy, redshift=1.0, light_profile_list=[light]
+    )
+
+    # Create Strong Lens Model
+
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+    # Create Analysis
+
+    analysis = cosmo.Analysis(
+        data=data, noise_map=noise_map, psf=psf, grid=grid
+    )
+
+    # Run Search Over N cpus
+
+    wall_times = np.zeros((n_repeats, n_cpus))
+
+    for i in range(n_repeats):
+
+        print(f"\nRepeat {i+1} of {n_repeats}\n")
+
+        for j in range(n_cpus):
+
+            print(f"\nNumber of CPUs = {n_cpus_arr[j]}")
+            n_cpus_to_use = n_cpus_arr[j]
+            search = af.Emcee(
+                number_of_cores=n_cpus_to_use,
+            )
+            result = search.fit(model=model, analysis=analysis)
+            time = result.samples.time
+            output[i, j] = float(time)
+            print("\n")
+        
+    np.save(file=output_filename, arr=output)
+
+if __name__ == "__main__":
+    main()
