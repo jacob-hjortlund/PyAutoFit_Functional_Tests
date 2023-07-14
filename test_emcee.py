@@ -15,6 +15,8 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
+use_single_value_of_cpus = True
+
 n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
 
 def power_two(n):
@@ -30,6 +32,10 @@ def main():
             2**i for i in range(power_two(n_cpus_available) + 1)
         ]
     )
+
+    if use_single_value_of_cpus:
+        n_cpus_arr = np.array([n_cpus_available])
+    
     n_cpus = len(n_cpus_arr)
 
     # Set Paths
@@ -127,7 +133,7 @@ def main():
             search = af.Emcee(
                 number_of_cores=n_cpus_to_use,
                 number_of_walkers=50,
-                number_of_steps=2500,
+                number_of_steps=1000,
                 iterations_per_update=int(1e6), # set to large number to avoid updates
             )
             result = search.fit(model=model, analysis=analysis)
