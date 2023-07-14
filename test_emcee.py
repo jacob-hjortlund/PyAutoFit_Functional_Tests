@@ -15,16 +15,13 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-<<<<<<< HEAD
 use_single_value_of_cpus = True
-=======
 max_mpi_workers = int(os.environ.get("MPI4PY_FUTURES_MAX_WORKERS", "1"))
 
 if max_mpi_workers == 1:
     n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
 else:
     n_cpus_available = max_mpi_workers
->>>>>>> 6cfb534 (minor changes)
 
 def power_two(n):
     return int(np.log2(n))
@@ -38,7 +35,6 @@ def main():
         [
             2**i for i in range(power_two(n_cpus_available) + 1)
         ]
-<<<<<<< HEAD
     )
 
     if use_single_value_of_cpus:
@@ -141,7 +137,6 @@ def main():
                 number_of_cores=n_cpus_to_use,
                 number_of_walkers=256,
                 number_of_steps=2500,
->>>>>>> 6cfb534 (minor changes)
                 iterations_per_update=int(1e6), # set to large number to avoid updates
             )
             result = search.fit(model=model, analysis=analysis)
