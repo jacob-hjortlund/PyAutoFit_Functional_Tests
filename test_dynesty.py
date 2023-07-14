@@ -15,7 +15,12 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
+max_mpi_workers = int(os.environ.get("MPI4PY_FUTURES_MAX_WORKERS", "1"))
+
+if max_mpi_workers == 1:
+    n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
+else:
+    n_cpus_available = max_mpi_workers
 
 
 def power_two(n):
@@ -25,7 +30,7 @@ def main():
 
     # CPU Settings TODO: Make this a CLI arg or config based
 
-    n_repeats = 1
+    n_repeats = 5
     n_cpus_arr = np.array(
         [
             2**i for i in range(power_two(n_cpus_available) + 1)
@@ -49,7 +54,7 @@ def main():
     os.makedirs(save_path, exist_ok=True)
 
     output_filename = os.path.join(
-        save_path, "mp_walltimes.npy"
+        save_path, "sneaky_mp_walltimes.npy"
     )
     if os.path.exists(output_filename):
         output = np.load(file=output_filename)
@@ -126,7 +131,7 @@ def main():
             print(f"\nNumber of CPUs = {n_cpus_arr[j]}")
             n_cpus_to_use = n_cpus_arr[j]
             search = af.DynestyStatic(
-                nlive=250,
+                nlive=256,
                 sample="rwalk",
                 iterations_per_update=int(1e6), # set to large number to avoid updates
                 number_of_cores=n_cpus_to_use,
