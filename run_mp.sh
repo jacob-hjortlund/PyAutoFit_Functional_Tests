@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dynesty_sneaky_mp
+#SBATCH --job-name=mp
 
 # set the partition
 #SBATCH --partition=dark
@@ -41,8 +41,10 @@ export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
-NP1_REPEATS=0
-MAX_CPU_ITERS=2
+NP1_REPEATS=5
+MAX_CPU_ITERS=6
+SEARCH_NAME=Emcee
+POOL_TYPE=SneakierPool
 
 for ((i=0;i<=NP1_REPEATS;i++))
 do
@@ -56,17 +58,15 @@ do
         echo "Using $N_CPU CPUS.."
         echo ""
 
-        mpiexec -n $N_CPU python -m mpi4py.futures \
+        python -m mpi4py.futures \
         test_parallel_search.py \
-        search_name="Emcee" \
-        pool_type="SneakierPool" \
+        search_name=$SEARCH_NAME \
+        pool_type=$POOL_TYPE \
         parallelization_scheme="mp" \
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
         n_repeats=$NP1_REPEATS \
-        repeat_index=$i \
-        search_cfg.number_of_steps=1000 \
-        search_cfg.number_of_walkers=25
+        repeat_index=$i 
         
         echo ""
     done
