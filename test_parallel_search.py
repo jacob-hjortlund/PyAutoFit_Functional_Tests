@@ -1,4 +1,6 @@
 import os
+import hydra
+import omegaconf
 import numpy as np
 import autofit as af
 import autofit.plot as aplt
@@ -15,54 +17,52 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-use_single_value_of_cpus = True
-max_mpi_workers = int(os.environ.get("MPI4PY_FUTURES_MAX_WORKERS", "1"))
+@hydra.main(
+    version_base=None, config_path="config", config_name="hydra"
+)
+def main(hydra_cfg: omegaconf.DictConfig) -> None:
 
-if max_mpi_workers == 1:
-    n_cpus_available = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
-else:
-    n_cpus_available = max_mpi_workers
+    pool_type = hydra_cfg['pool_type']
+    search_name = hydra_cfg["search_name"]
+    parallelization_scheme = hydra_cfg["parallelization_scheme"]
+    
+    cpu_index= int(hydra_cfg["cpu_index"])
+    max_cpu_iters = int(hydra_cfg["max_cpu_iters"])
+    n_cpus = int(2**cpu_index) 
 
-def power_two(n):
-    return int(np.log2(n))
-
-def main():
-
-    # CPU Settings TODO: Make this a CLI arg or config based
-
-    n_repeats = 5
-    n_cpus_arr = np.array(
-        [
-            2**i for i in range(power_two(n_cpus_available) + 1)
-        ]
+    n_repeats = np.max(
+        [int(hydra_cfg["n_repeats"])-1, 1]
     )
+    repeat_index = int(hydra_cfg["repeat_index"])
 
-    if use_single_value_of_cpus:
-        n_cpus_arr = np.array([n_cpus_available])
-    n_cpus = len(n_cpus_arr)
+    search_cfg = omegaconf.OmegaConf.to_container(hydra_cfg["search_cfg"])
 
     # Set Paths
 
     root_path = str(here())
 
     dataset_path = os.path.join(
-        root_path, "dataset", "cosmology"
+        root_path,
+        "dataset",
+        "cosmology"
     )
 
     save_path = os.path.join(
-        root_path, "results",
-        f"n_cpus_{n_cpus_available}_repeats_{n_repeats}",
-        "emcee"
+        root_path,
+        "results",
+        search_name
     )
     os.makedirs(save_path, exist_ok=True)
 
     output_filename = os.path.join(
-        save_path, "sneaky_mp_walltimes.npy"
+        save_path,
+        f"{pool_type}_{parallelization_scheme}_{max_cpu_iters}_walltimes.npy"
     )
+
     if os.path.exists(output_filename):
         output = np.load(file=output_filename)
     else:
-        output = np.zeros((n_repeats, n_cpus))
+        output = np.zeros((n_repeats, max_cpu_iters+1))
         np.save(file=output_filename, arr=output)
 
     config_path = os.path.join(
@@ -92,7 +92,7 @@ def main():
     mass.centre = (0.0, 0.0)
     mass.axis_ratio = af.UniformPrior(lower_limit=0.6, upper_limit=1.0)
     mass.angle = af.UniformPrior(lower_limit=0.0, upper_limit=180.0)
-    mass.mass = af.UniformPrior(lower_limit=1.0, upper_limit=2.0) # This is a prior I know from previous analysis
+    mass.mass = af.UniformPrior(lower_limit=1.0, upper_limit=2.0)
 
     lens = af.Model(
         cosmo.Galaxy, redshift=0.5, light_profile_list=[light], mass_profile_list=[mass]
@@ -102,8 +102,8 @@ def main():
 
     light = af.Model(cosmo.lp.LightExponential)
 
-    light.centre.centre_0 = af.GaussianPrior(mean=-0.25, sigma=0.1) # This is a prior I know from previous analysis
-    light.centre.centre_1 = af.GaussianPrior(mean=0.33, sigma=0.1) # This is a prior I know from previous analysis
+    light.centre.centre_0 = af.GaussianPrior(mean=-0.25, sigma=0.1)
+    light.centre.centre_1 = af.GaussianPrior(mean=0.33, sigma=0.1)
     light.axis_ratio = af.UniformPrior(lower_limit=0.7, upper_limit=1.0)
     light.angle = af.UniformPrior(lower_limit=0.0, upper_limit=180.0)
     light.intensity = af.LogUniformPrior(lower_limit=1e-4, upper_limit=1e4)
@@ -123,28 +123,20 @@ def main():
         data=data, noise_map=noise_map, psf=psf, grid=grid
     )
 
-    # Run Search Over N cpus
+    # Create Search
 
-    for i in range(n_repeats):
+    search_function = getattr(af, search_name)
 
-        print(f"\nRepeat {i+1} of {n_repeats}\n")
-
-        for j in range(n_cpus):
-
-            print(f"\nNumber of CPUs = {n_cpus_arr[j]}")
-            n_cpus_to_use = n_cpus_arr[j]
-            search = af.Emcee(
-                number_of_cores=n_cpus_to_use,
-                number_of_walkers=256,
-                number_of_steps=2500,
-                iterations_per_update=int(1e6), # set to large number to avoid updates
-            )
-            result = search.fit(model=model, analysis=analysis)
-            time = result.samples.time
-            output[i, j] = float(time)
-            print("\n")
-        
-        np.save(file=output_filename, arr=output)
+    search = search_function(
+        number_of_cores=n_cpus,
+        iterations_per_update=int(1e6),
+        **search_cfg
+    )
+    result = search.fit(model=model, analysis=analysis)
+    time = result.samples.time
+    output[repeat_index, cpu_index] = float(time)
+    
+    np.save(file=output_filename, arr=output)
 
 if __name__ == "__main__":
     main()

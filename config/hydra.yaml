@@ -1,0 +1,15 @@
+search_name: "Emcee"
+pool_type: "SneakierPool"
+parallelization_scheme: "mp"
+
+max_cpu_iters: 2
+cpu_index: 0
+
+n_repeats: 1
+repeat_index: 0
+
+search_cfg:
+  number_of_walkers: 256
+  number_of_steps: 2500
+  nlive: 256
+  sample: "auto"

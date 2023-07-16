@@ -40,13 +40,35 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
-# export MPIEXEC_UNIVERSE_SIZE=1
-# export MPI4PY_FUTURES_MAX_WORKERS=1
 
-#python test_emcee.py 
-#mpiexec -n 124 python -m mpi4py.futures test_emcee.py
+NP1_REPEATS=0
+MAX_CPU_ITERS=2
 
-python test_dynesty.py
-#mpiexec -n 1 python test_dynesty.py
+for ((i=0;i<=NP1_REPEATS;i++))
+do
+    echo "Starting repeat $i..."
+    echo ""
+    for ((j=0;j<=MAX_CPU_ITERS;j++))
+    do
+        
+        let N_CPU=2**$j
 
-wait
+        echo "Using $N_CPU CPUS.."
+        echo ""
+
+        mpiexec -n $N_CPU python -m mpi4py.futures \
+        test_parallel_search.py \
+        search_name="Emcee" \
+        pool_type="SneakierPool" \
+        parallelization_scheme="mp" \
+        max_cpu_iters=$MAX_CPU_ITERS \
+        cpu_index=$j \
+        n_repeats=$NP1_REPEATS \
+        repeat_index=$i \
+        search_cfg.number_of_steps=1000 \
+        search_cfg.number_of_walkers=25
+        
+        echo ""
+    done
+    echo ""
+done    
