@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=dynesty_sneaky_mp
+#SBATCH --job-name=mpi
 
 # set the partition
 #SBATCH --partition=dark
 
-#SBATCH --nodes=1                       ## 4 Here you specify how many nodes you need
+#SBATCH --nodes=4                       ## 4 Here you specify how many nodes you need
 
-#SBATCH --ntasks=1                    ## 124 248
+#SBATCH --ntasks=256
 
 ##SBATCH --ntasks-per-node=1            ## 16 Here you specify that you only want one core
 
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=1
 
 #SBATCH --mem=0
 
@@ -42,7 +42,9 @@ export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
 NP1_REPEATS=0
-MAX_CPU_ITERS=2
+MAX_CPU_ITERS=8
+SEARCH_NAME=Emcee
+POOL_TYPE=SneakierPool
 
 for ((i=0;i<=NP1_REPEATS;i++))
 do
@@ -58,17 +60,15 @@ do
 
         mpiexec -n $N_CPU python -m mpi4py.futures \
         test_parallel_search.py \
-        search_name="Emcee" \
-        pool_type="SneakierPool" \
-        parallelization_scheme="mp" \
+        search_name=$SEARCH_NAME \
+        pool_type=$POOL_TYPE \
+        parallelization_scheme="mpi" \
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
         n_repeats=$NP1_REPEATS \
-        repeat_index=$i \
-        search_cfg.number_of_steps=1000 \
-        search_cfg.number_of_walkers=25
-        
+        repeat_index=$i 
+
         echo ""
     done
     echo ""
-done    
+done      
