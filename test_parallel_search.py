@@ -27,7 +27,7 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     parallelization_scheme = hydra_cfg["parallelization_scheme"]
     
     cpu_index= int(hydra_cfg["cpu_index"])
-    max_cpu_iters = int(hydra_cfg["max_cpu_iters"])
+    max_cpu_iters = int(hydra_cfg["max_cpu_iters"]) + 1
     n_cpus = int(2**cpu_index) 
 
     n_repeats = np.max(
