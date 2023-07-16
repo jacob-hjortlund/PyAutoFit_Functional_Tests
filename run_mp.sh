@@ -58,8 +58,7 @@ do
         echo "Using $N_CPU CPUS.."
         echo ""
 
-        python -m mpi4py.futures \
-        test_parallel_search.py \
+        python test_parallel_search.py \
         search_name=$SEARCH_NAME \
         pool_type=$POOL_TYPE \
         parallelization_scheme="mp" \
