@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mp
+#SBATCH --job-name=mp_emcee_new
 
 # set the partition
 #SBATCH --partition=dark
@@ -41,12 +41,12 @@ export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
-NP1_REPEATS=5
-MAX_CPU_ITERS=6
+N_REPEATS=4 # zero-indexed
+MAX_CPU_ITERS=6 # zero-indexed
 SEARCH_NAME=Emcee
 POOL_TYPE=SneakierPool
 
-for ((i=0;i<=NP1_REPEATS;i++))
+for ((i=0;i<=N_REPEATS;i++))
 do
     echo "Starting repeat $i..."
     echo ""
@@ -64,7 +64,7 @@ do
         parallelization_scheme="mp" \
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
-        n_repeats=$NP1_REPEATS \
+        n_repeats=$N_REPEATS \
         repeat_index=$i 
         
         echo ""
