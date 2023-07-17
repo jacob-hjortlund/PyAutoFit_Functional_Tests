@@ -41,8 +41,12 @@ export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
+
 NP1_REPEATS=5
-MAX_CPU_ITERS=6
+
+START_CPU_INDEX=1
+MAX_CPU_ITERS=2
+
 SEARCH_NAME=Emcee
 POOL_TYPE=SneakierPool
 
@@ -50,7 +54,7 @@ for ((i=0;i<=NP1_REPEATS;i++))
 do
     echo "Starting repeat $i..."
     echo ""
-    for ((j=0;j<=MAX_CPU_ITERS;j++))
+    for ((j=START_CPU_INDEX;j<=MAX_CPU_ITERS;j++))
     do
         
         let N_CPU=2**$j

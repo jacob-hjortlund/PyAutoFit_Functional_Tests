@@ -1,3 +1,5 @@
 output/
 SLURM_Outputs/
 __pycache__/
+outputs/
+results/
