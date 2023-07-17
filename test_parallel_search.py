@@ -30,9 +30,7 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     max_cpu_iters = int(hydra_cfg["max_cpu_iters"]) + 1
     n_cpus = int(2**cpu_index) 
 
-    n_repeats = np.max(
-        [int(hydra_cfg["n_repeats"])-1, 1]
-    )
+    n_repeats = int(hydra_cfg["n_repeats"]) + 1
     repeat_index = int(hydra_cfg["repeat_index"])
 
     search_cfg = omegaconf.OmegaConf.to_container(hydra_cfg["search_cfg"])
@@ -62,7 +60,7 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     if os.path.exists(output_filename):
         output = np.load(file=output_filename)
     else:
-        output = np.zeros((n_repeats, max_cpu_iters+1))
+        output = np.zeros((n_repeats, max_cpu_iters))
         np.save(file=output_filename, arr=output)
 
     config_path = os.path.join(
@@ -139,4 +137,4 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     np.save(file=output_filename, arr=output)
 
 if __name__ == "__main__":
-    main()
+    main() 

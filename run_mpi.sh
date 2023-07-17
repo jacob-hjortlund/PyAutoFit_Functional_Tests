@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=mpi
+#SBATCH --job-name=mpi_emcee_new
 
 # set the partition
 #SBATCH --partition=dark
 
-#SBATCH --nodes=4                       ## 4 Here you specify how many nodes you need
+#SBATCH --nodes=9                       ## 4 Here you specify how many nodes you need
 
-#SBATCH --ntasks=256
+#SBATCH --ntasks=257
 
-##SBATCH --ntasks-per-node=1            ## 16 Here you specify that you only want one core
+##SBATCH --ntasks-per-node=32            ## 16 Here you specify that you only want one core
 
 #SBATCH --cpus-per-task=1
 
@@ -46,10 +46,14 @@ NP1_REPEATS=0
 START_CPU_INDEX=1
 MAX_CPU_ITERS=2
 
+N_REPEATS=4 # zero-indexed
+MAX_CPU_ITERS=8 # zero-indexed
 SEARCH_NAME=Emcee
 POOL_TYPE=SneakierPool
 
-for ((i=0;i<=NP1_REPEATS;i++))
+echo $(mpiexec --version)
+
+for ((i=0;i<=N_REPEATS;i++))
 do
     echo "Starting repeat $i..."
     echo ""
@@ -57,18 +61,24 @@ do
     do
         
         let N_CPU=2**$j
+        export MPI4PY_FUTURES_MAX_WORKERS=$N_CPU
 
         echo "Using $N_CPU CPUS.."
+        echo "MPI4PY max workers: $MPI4PY_FUTURES_MAX_WORKERS"
         echo ""
 
+<<<<<<< HEAD
         mpiexec -n $N_CPU python \
+=======
+        mpiexec -n 1 python -m mpi4py.futures \
+>>>>>>> 47b14825dfa3bbe90f14435bf49aa5cfc129a855
         test_parallel_search.py \
         search_name=$SEARCH_NAME \
         pool_type=$POOL_TYPE \
         parallelization_scheme="mpi" \
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
-        n_repeats=$NP1_REPEATS \
+        n_repeats=$N_REPEATS \
         repeat_index=$i 
 
         echo ""
