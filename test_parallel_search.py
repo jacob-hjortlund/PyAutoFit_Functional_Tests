@@ -54,7 +54,7 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
 
     output_filename = os.path.join(
         save_path,
-        f"{pool_type}_{parallelization_scheme}_{max_cpu_iters}_walltimes.npy"
+        f"pool_{pool_type}_scheme_{parallelization_scheme}_log2cpus_{max_cpu_iters-1}_repeats_{n_repeats}_walltimes.npy"
     )
 
     if os.path.exists(output_filename):
