@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mp_emcee_new
+#SBATCH --job-name=mp_dynesty_new
 
 # set the partition
 #SBATCH --partition=dark
@@ -42,14 +42,12 @@ export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
 
-NP1_REPEATS=5
+N_REPEATS=0 # zero-indexed
 
-START_CPU_INDEX=1
-MAX_CPU_ITERS=2
-
-N_REPEATS=4 # zero-indexed
+START_CPU_INDEX=0
 MAX_CPU_ITERS=6 # zero-indexed
-SEARCH_NAME=Emcee
+
+SEARCH_NAME=DynestyStatic
 POOL_TYPE=SneakierPool
 
 for ((i=0;i<=N_REPEATS;i++))

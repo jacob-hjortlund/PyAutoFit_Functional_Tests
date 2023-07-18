@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=mpi_emcee_new
+#SBATCH --job-name=mpi_dynesty_new
 
 # set the partition
 #SBATCH --partition=dark
 
-#SBATCH --nodes=9                       ## 4 Here you specify how many nodes you need
+#SBATCH --nodes=8                       ## 4 Here you specify how many nodes you need
 
-#SBATCH --ntasks=257
+#SBATCH --ntasks=256
 
 ##SBATCH --ntasks-per-node=32            ## 16 Here you specify that you only want one core
 
@@ -41,14 +41,12 @@ export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
-NP1_REPEATS=0
+N_REPEATS=0 # zero-indexed
 
-START_CPU_INDEX=1
-MAX_CPU_ITERS=2
-
-N_REPEATS=4 # zero-indexed
+START_CPU_INDEX=7
 MAX_CPU_ITERS=8 # zero-indexed
-SEARCH_NAME=Emcee
+
+SEARCH_NAME=DynestyStatic
 POOL_TYPE=SneakierPool
 
 echo $(mpiexec --version)
@@ -61,18 +59,11 @@ do
     do
         
         let N_CPU=2**$j
-        export MPI4PY_FUTURES_MAX_WORKERS=$N_CPU
 
         echo "Using $N_CPU CPUS.."
-        echo "MPI4PY max workers: $MPI4PY_FUTURES_MAX_WORKERS"
         echo ""
 
-<<<<<<< HEAD
-        mpiexec -n $N_CPU python \
-=======
-        mpiexec -n 1 python -m mpi4py.futures \
->>>>>>> 47b14825dfa3bbe90f14435bf49aa5cfc129a855
-        test_parallel_search.py \
+        mpiexec -n $N_CPU python test_parallel_search.py \
         search_name=$SEARCH_NAME \
         pool_type=$POOL_TYPE \
         parallelization_scheme="mpi" \
