@@ -10,6 +10,8 @@ import src as cosmo
 
 from autoconf import conf
 from pyprojroot import here
+from time import time
+from mpi4py import MPI
 
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -25,13 +27,18 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     pool_type = hydra_cfg['pool_type']
     search_name = hydra_cfg["search_name"]
     parallelization_scheme = hydra_cfg["parallelization_scheme"]
-    
+    tags = "_".join(hydra_cfg["tags"])
+
     cpu_index= int(hydra_cfg["cpu_index"])
     max_cpu_iters = int(hydra_cfg["max_cpu_iters"]) + 1
     n_cpus = int(2**cpu_index) 
 
     n_repeats = int(hydra_cfg["n_repeats"]) + 1
     repeat_index = int(hydra_cfg["repeat_index"])
+
+    run_name = f"search_{search_name}_pool_{pool_type}_scheme_{parallelization_scheme}_log2cpus_{max_cpu_iters-1}_repeats_{n_repeats}"
+    if len(tags) > 0:
+        run_name = f"{run_name}_{tags}"
 
     search_cfg = omegaconf.OmegaConf.to_container(hydra_cfg["search_cfg"])
 
@@ -54,7 +61,7 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
 
     output_filename = os.path.join(
         save_path,
-        f"pool_{pool_type}_scheme_{parallelization_scheme}_log2cpus_{max_cpu_iters-1}_repeats_{n_repeats}_walltimes.npy"
+        f"{run_name}_walltimes.npy"
     )
 
     if os.path.exists(output_filename):
@@ -126,15 +133,37 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     search_function = getattr(af, search_name)
 
     search = search_function(
+        name =f"cpu_{cpu_index}_repeat_{repeat_index}",
+        path_prefix=run_name,
         number_of_cores=n_cpus,
         iterations_per_update=int(1e6),
+        # maxiter=1000,
+        # maxcall=1000,
         **search_cfg
     )
     result = search.fit(model=model, analysis=analysis)
-    time = result.samples.time
-    output[repeat_index, cpu_index] = float(time)
-    
+    fit_time = result.samples.time
+    output[repeat_index, cpu_index] = float(fit_time)
+
     np.save(file=output_filename, arr=output)
+
+    if MPI.COMM_WORLD.Get_rank() == 0:
+
+        samples = result.samples
+        n_times = 100
+
+        times = np.zeros(n_times)
+        for i in range(n_times):
+            start = time()
+            analysis.log_likelihood_function(
+                instance=samples.from_sample_index(sample_index=i)
+            )
+            times[i] = time() - start
+
+        avg_time = np.mean(times)
+        std_time = np.std(times, ddof=1)
+
+        print(f"Likelihood Time: {avg_time} +/- {std_time}")
 
 if __name__ == "__main__":
     main() 

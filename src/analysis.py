@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 from typing import List
+from time import sleep
 
 import autofit as af
 
@@ -105,6 +106,8 @@ class Analysis(af.Analysis):
         noise_normalization = np.sum(np.log(2 * np.pi * self.noise_map**2.0))
 
         log_likelihood = -0.5 * (chi_squared + noise_normalization)
+
+        #sleep(1.)
 
         return log_likelihood
 

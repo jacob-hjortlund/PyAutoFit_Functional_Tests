@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mp_dynesty_new
+#SBATCH --job-name=mp_dynesty_old_full
 
 # set the partition
 #SBATCH --partition=dark
@@ -62,6 +62,9 @@ do
         echo "Using $N_CPU CPUS.."
         echo ""
 
+        py-spy record \
+        -s -o ./profiles/full_old_init_${j} \
+        -f speedscope \
         python test_parallel_search.py \
         search_name=$SEARCH_NAME \
         pool_type=$POOL_TYPE \
@@ -69,7 +72,9 @@ do
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
         n_repeats=$N_REPEATS \
-        repeat_index=$i 
+        repeat_index=$i \
+        search_cfg.sample="rwalk" \
+        tags=["no_sleep","old_init","full"] \
         
         echo ""
     done

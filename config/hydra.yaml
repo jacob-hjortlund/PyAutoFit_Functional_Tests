@@ -1,6 +1,7 @@
 search_name: "Emcee"
 pool_type: "SneakierPool"
 parallelization_scheme: "mp"
+tags: []
 
 max_cpu_iters: 2
 cpu_index: 0
@@ -10,6 +11,6 @@ repeat_index: 0
 
 search_cfg:
   nwalkers: 256
-  nsteps: 2500
+  nsteps: 1000
   nlive: 256
   sample: "auto"

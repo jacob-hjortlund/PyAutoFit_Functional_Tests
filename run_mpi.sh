@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mpi_dynesty_new
+#SBATCH --job-name=mpi_dynesty_no_sleep
 
 # set the partition
 #SBATCH --partition=dark
@@ -43,7 +43,7 @@ export VECLIB_MAXIMUM_THREADS=1
 
 N_REPEATS=0 # zero-indexed
 
-START_CPU_INDEX=7
+START_CPU_INDEX=0
 MAX_CPU_ITERS=8 # zero-indexed
 
 SEARCH_NAME=DynestyStatic
@@ -70,7 +70,8 @@ do
         max_cpu_iters=$MAX_CPU_ITERS \
         cpu_index=$j \
         n_repeats=$N_REPEATS \
-        repeat_index=$i 
+        repeat_index=$i \
+        tags=["no_sleep"]
 
         echo ""
     done
