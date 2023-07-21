@@ -125,7 +125,8 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     # Create Analysis
 
     analysis = cosmo.Analysis(
-        data=data, noise_map=noise_map, psf=psf, grid=grid
+        data=data, noise_map=noise_map, psf=psf, grid=grid,
+        sleep=hydra_cfg["sleep"]
     )
 
     # Create Search
@@ -133,12 +134,10 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
     search_function = getattr(af, search_name)
 
     search = search_function(
-        name =f"cpu_{cpu_index}_repeat_{repeat_index}",
-        path_prefix=run_name,
+        #name =f"cpu_{cpu_index}_repeat_{repeat_index}",
+        #path_prefix=run_name,
         number_of_cores=n_cpus,
         iterations_per_update=int(1e6),
-        # maxiter=1000,
-        # maxcall=1000,
         **search_cfg
     )
     result = search.fit(model=model, analysis=analysis)
@@ -151,12 +150,13 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
 
         samples = result.samples
         n_times = 100
+        instance = samples.max_log_likelihood()
 
         times = np.zeros(n_times)
         for i in range(n_times):
             start = time()
             analysis.log_likelihood_function(
-                instance=samples.from_sample_index(sample_index=i)
+                instance=instance
             )
             times[i] = time() - start
 

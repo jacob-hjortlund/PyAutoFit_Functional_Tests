@@ -9,8 +9,13 @@ cpu_index: 0
 n_repeats: 1
 repeat_index: 0
 
+sleep: 0.0
+
 search_cfg:
   nwalkers: 256
   nsteps: 1000
   nlive: 256
   sample: "auto"
+  maxiter: NULL
+  maxcall: NULL
+  n_effective: NULL

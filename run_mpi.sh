@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mpi_dynesty_no_sleep
+#SBATCH --job-name=mpi_dynesty_1000
 
 # set the partition
 #SBATCH --partition=dark
@@ -71,7 +71,13 @@ do
         cpu_index=$j \
         n_repeats=$N_REPEATS \
         repeat_index=$i \
-        tags=["no_sleep"]
+        sleep=1. \
+        tags=["maxiter_1000"] \
+        search_cfg.nlive=256 \
+        search_cfg.sample="rwalk" \
+        search_cfg.maxiter=1000 \
+        search_cfg.nsteps=100 \
+        #search_cfg.n_effective=100
 
         echo ""
     done

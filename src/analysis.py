@@ -1,16 +1,16 @@
 import os
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 from typing import List
-from time import sleep
 
 import autofit as af
 
 
 class Analysis(af.Analysis):
-    def __init__(self, data: np.ndarray, noise_map: np.ndarray, psf: np.ndarray, grid: np.ndarray):
+    def __init__(self, data: np.ndarray, noise_map: np.ndarray, psf: np.ndarray, grid: np.ndarray, sleep: float = 0.0):
         """
         The analysis class for the **PyAutoFit** example Astronomy project on gravitational lensing.
 
@@ -49,6 +49,7 @@ class Analysis(af.Analysis):
         self.noise_map = noise_map
         self.psf = psf
         self.grid = grid
+        self.sleep = sleep
 
         # The circular masking introduces zeros at the edge of the noise-map,
         # which can lead to divide-by-zero errors.
@@ -107,7 +108,7 @@ class Analysis(af.Analysis):
 
         log_likelihood = -0.5 * (chi_squared + noise_normalization)
 
-        #sleep(1.)
+        time.sleep(self.sleep)
 
         return log_likelihood
 
