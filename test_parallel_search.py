@@ -146,24 +146,26 @@ def main(hydra_cfg: omegaconf.DictConfig) -> None:
 
     np.save(file=output_filename, arr=output)
 
-    if MPI.COMM_WORLD.Get_rank() == 0:
+    print(f"Time for {n_cpus} CPUs: {fit_time} seconds")
 
-        samples = result.samples
-        n_times = 100
-        instance = samples.max_log_likelihood()
+    # if MPI.COMM_WORLD.Get_rank() == 0:
 
-        times = np.zeros(n_times)
-        for i in range(n_times):
-            start = time()
-            analysis.log_likelihood_function(
-                instance=instance
-            )
-            times[i] = time() - start
+    #     samples = result.samples
+    #     n_times = 100
+    #     instance = samples.max_log_likelihood()
 
-        avg_time = np.mean(times)
-        std_time = np.std(times, ddof=1)
+    #     times = np.zeros(n_times)
+    #     for i in range(n_times):
+    #         start = time()
+    #         analysis.log_likelihood_function(
+    #             instance=instance
+    #         )
+    #         times[i] = time() - start
 
-        print(f"Likelihood Time: {avg_time} +/- {std_time}")
+    #     avg_time = np.mean(times)
+    #     std_time = np.std(times, ddof=1)
+
+    #     print(f"Likelihood Time: {avg_time} +/- {std_time}")
 
 if __name__ == "__main__":
     main() 
